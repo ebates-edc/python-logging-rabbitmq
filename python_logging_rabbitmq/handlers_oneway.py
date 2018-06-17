@@ -72,6 +72,8 @@ class RabbitMQHandlerOneWay(logging.Handler):
         if len(self.fields) > 0:
             self.addFilter(FieldFilter(self.fields, self.fields_under_root))
 
+        self.is_handler_closed = False
+
         # Connect.
         self.createLock()
 
@@ -129,6 +131,9 @@ class RabbitMQHandlerOneWay(logging.Handler):
     def message_worker(self):
         while 1:
             try:
+                if self.is_handler_closed:
+                    break
+                    
                 record, routing_key = self.queue.get()
 
                 if not self.connection or self.connection.is_closed or not self.channel or self.channel.is_closed:
@@ -163,6 +168,7 @@ class RabbitMQHandlerOneWay(logging.Handler):
         """
         Free resources.
         """
+        self.is_handler_closed = True
 
         self.acquire()
 
